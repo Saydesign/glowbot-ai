@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react';
 
 interface IntroScreenProps {
   onComplete: (name: string, skinType: string) => void;
+  onGoToAdmin?: () => void;
 }
 
 const skinTypes = [
@@ -12,7 +13,7 @@ const skinTypes = [
   { id: 'sensitif', label: 'Sensitif', description: 'Mudah iritasi dan kemerahan' },
 ];
 
-export function IntroScreen({ onComplete }: IntroScreenProps) {
+export function IntroScreen({ onComplete, onGoToAdmin }: IntroScreenProps) {
   const [step, setStep] = useState<'name' | 'skin'>('name');
   const [name, setName] = useState('');
 
@@ -121,8 +122,16 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Powered by Gemini AI
+          Powered by Groq AI
         </p>
+        {onGoToAdmin && (
+          <button
+            onClick={onGoToAdmin}
+            className="mt-4 text-sm text-pink-500 hover:text-pink-600 transition-colors"
+          >
+            Admin Dashboard
+          </button>
+        )}
       </div>
     </div>
   );

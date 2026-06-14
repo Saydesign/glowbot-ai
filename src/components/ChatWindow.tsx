@@ -15,6 +15,7 @@ interface ChatWindowProps {
   userName: string;
   skinType: string;
   onReset: () => void;
+  onGoToAdmin?: () => void;
 }
 
 interface Message {
@@ -30,7 +31,7 @@ const skinTypeLabels: Record<string, string> = {
   sensitif: 'Sensitif',
 };
 
-export function ChatWindow({ userName, skinType, onReset }: ChatWindowProps) {
+export function ChatWindow({ userName, skinType, onReset, onGoToAdmin }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'model'; content: string }>>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -112,13 +113,23 @@ export function ChatWindow({ userName, skinType, onReset }: ChatWindowProps) {
               </p>
             </div>
           </div>
-          <button
-            onClick={onReset}
-            className="p-2 rounded-full hover:bg-pink-100 transition-colors group"
-            title="Mulai ulang"
-          >
-            <RotateCcw className="w-5 h-5 text-pink-400 group-hover:text-pink-600" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onGoToAdmin && (
+              <button
+                onClick={onGoToAdmin}
+                className="px-3 py-1.5 text-xs rounded-full bg-pink-100 text-pink-600 hover:bg-pink-200 transition-colors font-medium"
+              >
+                Admin
+              </button>
+            )}
+            <button
+              onClick={onReset}
+              className="p-2 rounded-full hover:bg-pink-100 transition-colors group"
+              title="Mulai ulang"
+            >
+              <RotateCcw className="w-5 h-5 text-pink-400 group-hover:text-pink-600" />
+            </button>
+          </div>
         </div>
       </header>
 
