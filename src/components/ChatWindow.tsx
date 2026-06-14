@@ -4,6 +4,12 @@ import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
 import { useGemini } from '../hooks/useGemini';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL || '',
+  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+);
 
 interface ChatWindowProps {
   userName: string;
@@ -27,6 +33,7 @@ const skinTypeLabels: Record<string, string> = {
 export function ChatWindow({ userName, skinType, onReset }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'model'; content: string }>>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { generateResponse, isLoading } = useGemini();
 
@@ -47,54 +54,51 @@ export function ChatWindow({ userName, skinType, onReset }: ChatWindowProps) {
     setMessages([welcomeMessage]);
   }, [userName, skinType]);
 
- const handleSendMessage = async (content: string) => {
-  const userMessage: Message = {
-    id: Date.now().toString(),
-    role: 'user',
-    content,
-  };
+  const handleSendMessage = async (content: string) => {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content,
+    };
 
-  setMessages((prev) => [...prev, userMessage]);
-  setConversationHistory((prev) => [...prev, { role: 'user', content }]);
+    setMessages((prev) => [...prev, userMessage]);
+    setConversationHistory((prev) => [...prev, { role: 'user', content }]);
 
-  const response = await generateResponse(content, skinType, conversationHistory);
+    const response = await generateResponse(content, skinType, conversationHistory);
 
-  const assistantMessage: Message = {
-    id: (Date.now() + 1).toString(),
-    role: 'assistant',
-    content: response,
-  };
+    const assistantMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: response,
+    };
 
-  setMessages((prev) => [...prev, assistantMessage]);
-  setConversationHistory((prev) => [...prev, { role: 'model', content: response }]);
+    setMessages((prev) => [...prev, assistantMessage]);
+    setConversationHistory((prev) => [...prev, { role: 'model', content: response }]);
 
-  // Simpan ke Supabase
-  try {
-    // Buat conversation baru kalau belum ada
-    let convId = conversationId;
-    if (!convId) {
-      const { data: conv } = await supabase
-        .from('conversations')
-        .insert({ user_name: userName, skin_type: skinType })
-        .select()
-        .single();
-      convId = conv?.id;
-      setConversationId(convId);
+    // Simpan ke Supabase
+    try {
+      let convId = conversationId;
+      if (!convId) {
+        const { data: conv } = await supabase
+          .from('conversations')
+          .insert({ user_name: userName, skin_type: skinType })
+          .select()
+          .single();
+        convId = conv?.id;
+        setConversationId(convId);
+      }
+
+      await supabase.from('messages').insert([
+        { conversation_id: convId, role: 'user', content },
+        { conversation_id: convId, role: 'assistant', content: response },
+      ]);
+    } catch (err) {
+      console.error('Gagal simpan ke Supabase:', err);
     }
-
-    // Simpan pesan user dan bot
-    await supabase.from('messages').insert([
-      { conversation_id: convId, role: 'user', content },
-      { conversation_id: convId, role: 'assistant', content: response },
-    ]);
-  } catch (err) {
-    console.error('Gagal simpan ke Supabase:', err);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex flex-col">
-      {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-pink-100 px-4 py-3 shadow-sm">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -118,7 +122,6 @@ export function ChatWindow({ userName, skinType, onReset }: ChatWindowProps) {
         </div>
       </header>
 
-      {/* Messages */}
       <main className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-3xl mx-auto">
           {messages.map((message) => (
@@ -129,7 +132,6 @@ export function ChatWindow({ userName, skinType, onReset }: ChatWindowProps) {
         </div>
       </main>
 
-      {/* Input */}
       <ChatInput onSend={handleSendMessage} disabled={isLoading} />
     </div>
   );
