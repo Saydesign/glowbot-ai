@@ -187,8 +187,8 @@ Password : glowbot2025
 
 ## 👤 Developer
 
-**Nama:** [Nama Kamu]  
-**Pelatihan:** [Nama Pelatihan]  
+**Nama:** M Qussay Farid Hidayat  
+**Pelatihan:** LLM Based Tools and Gemini API Integration for Data Scientists(hacktiv8)  
 **Tahun:** 2026
 
 ---
