@@ -2,17 +2,15 @@
 
 > Asisten skincare berbasis AI untuk UMKM Kecantikan Lokal Indonesia
 
-![GlowBot Preview](https://img.shields.io/badge/Status-Live-brightgreen) ![Gemini API](https://img.shields.io/badge/AI-Gemini%201.5%20Flash-blue) ![Vercel](https://img.shields.io/badge/Deploy-Vercel-black) ![Supabase](https://img.shields.io/badge/Database-Supabase-green)
+![Status](https://img.shields.io/badge/Status-Live-brightgreen) ![Groq AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3-orange) ![Vercel](https://img.shields.io/badge/Deploy-Vercel-black) ![Supabase](https://img.shields.io/badge/Database-Supabase-green) ![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-blue)
 
-🔗 **Live Demo:** [glowbot-ai-skincare-chatbot.vercel.app](https://glowbot-ai-skincare-chatbot.vercel.app)
-
-iiiiiiiiiiiiiiiiiiiiiiiiiiii
+🔗 **Live Demo:** [glowbot-ai.vercel.app](https://glowbot-ai.vercel.app)
 
 ---
 
 ## 📌 Tentang Project
 
-GlowBot adalah AI chatbot yang dirancang untuk membantu UMKM skincare lokal Indonesia melayani pelanggan secara otomatis. Bot ini mampu memberikan konsultasi jenis kulit, rekomendasi produk, dan edukasi bahan aktif — menggunakan bahasa Indonesia yang santai dan mudah dipahami.
+GlowBot adalah AI chatbot yang dirancang untuk membantu UMKM skincare lokal Indonesia melayani pelanggan secara otomatis 24/7. Bot ini mampu memberikan konsultasi jenis kulit, rekomendasi produk, edukasi bahan aktif, hingga proses checkout langsung dalam chat — menggunakan bahasa Indonesia yang santai dan mudah dipahami.
 
 Project ini dibuat sebagai **Final Project** pelatihan AI Chatbot Development.
 
@@ -20,12 +18,26 @@ Project ini dibuat sebagai **Final Project** pelatihan AI Chatbot Development.
 
 ## ✨ Fitur Utama
 
-- 🤖 **Konsultasi jenis kulit** — bot mendeteksi jenis kulit (berminyak, kering, kombinasi, sensitif) dan menyesuaikan respons
-- 💬 **Chat interaktif** — tampilan bubble chat yang modern dan mobile responsive
-- 🧴 **Rekomendasi produk** — bot merekomendasikan produk dari katalog UMKM berdasarkan kebutuhan kulit
-- 📚 **Edukasi bahan aktif** — penjelasan niacinamide, retinol, AHA/BHA, dll dalam bahasa yang mudah dipahami
-- 🧠 **Memory percakapan** — riwayat chat tersimpan di database Supabase
-- ⚡ **Respons cepat** — didukung Gemini 1.5 Flash API
+### 🤖 Chat & AI
+- **Konsultasi jenis kulit** — bot mendeteksi jenis kulit (berminyak, kering, kombinasi, sensitif) dan menyesuaikan respons
+- **Chat interaktif** — tampilan bubble chat modern, mobile responsive, dengan markdown rendering
+- **Rekomendasi produk** — bot merekomendasikan produk dari katalog UMKM berdasarkan kebutuhan kulit
+- **Edukasi bahan aktif** — penjelasan niacinamide, retinol, AHA/BHA, dll dalam bahasa mudah dipahami
+- **Memory percakapan** — riwayat chat tersimpan otomatis di Supabase
+
+### 🛒 Checkout & Transaksi
+- **Keranjang belanja dalam chat** — tambah produk langsung dari rekomendasi bot
+- **Checkout otomatis** — isi nama, nomor HP, dan alamat pengiriman
+- **Invoice otomatis** — nomor order dibuat otomatis setelah checkout
+- **Manajemen pesanan** — semua pesanan tersimpan di database
+
+### 🔐 Admin Dashboard
+- **Login admin** — autentikasi untuk keamanan akses dashboard
+- **Overview lengkap** — statistik percakapan, pesan, produk, pesanan, dan pendapatan
+- **Manajemen produk** — tambah, edit, dan hapus produk katalog
+- **Riwayat percakapan** — filter harian, mingguan, bulanan, tahunan + hapus percakapan
+- **Manajemen pesanan** — update status pesanan (Pending/Confirmed/Selesai/Batal)
+- **AI Insight** — analisis menyeluruh bisnis menggunakan Groq AI
 
 ---
 
@@ -35,8 +47,8 @@ Project ini dibuat sebagai **Final Project** pelatihan AI Chatbot Development.
 |---|---|
 | React + Vite + TypeScript | Frontend framework |
 | Tailwind CSS | Styling & responsive design |
-| Google Gemini 1.5 Flash | AI engine (free tier) |
-| Supabase | Database & memory chat |
+| Groq AI (Llama 3.3-70b) | AI engine (free tier, ultra fast) |
+| Supabase | Database, memory chat & orders |
 | Vercel | Deployment & hosting |
 | Bolt.new | Vibe coding & development |
 
@@ -46,8 +58,8 @@ Project ini dibuat sebagai **Final Project** pelatihan AI Chatbot Development.
 
 ### 1. Clone repository
 ```bash
-git clone https://github.com/username/glowbot-ai-skincare-chatbot.git
-cd glowbot-ai-skincare-chatbot
+git clone https://github.com/Saydesign/glowbot-ai.git
+cd glowbot-ai
 ```
 
 ### 2. Install dependencies
@@ -56,9 +68,9 @@ npm install
 ```
 
 ### 3. Setup environment variables
-Buat file `.env` di root folder, isi dengan:
+Buat file `.env` di root folder:
 ```
-VITE_GEMINI_API_KEY=your_gemini_api_key
+VITE_GROQ_API_KEY=your_groq_api_key
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
@@ -92,6 +104,7 @@ create table conversations (
   id uuid default gen_random_uuid() primary key,
   user_name text,
   skin_type text,
+  skin_concern text,
   created_at timestamp default now()
 );
 
@@ -102,6 +115,29 @@ create table messages (
   content text not null,
   created_at timestamp default now()
 );
+
+create table orders (
+  id uuid default gen_random_uuid() primary key,
+  order_number text,
+  customer_name text,
+  phone text,
+  address text,
+  items jsonb,
+  total integer,
+  status text default 'pending',
+  created_at timestamp default now()
+);
+
+-- Disable RLS & grant permissions
+alter table products disable row level security;
+alter table conversations disable row level security;
+alter table messages disable row level security;
+alter table orders disable row level security;
+
+grant all on products to anon;
+grant all on conversations to anon;
+grant all on messages to anon;
+grant all on orders to anon;
 ```
 
 ---
@@ -109,24 +145,43 @@ create table messages (
 ## 📁 Struktur Project
 
 ```
-glowbot-ai-skincare-chatbot/
+glowbot-ai/
 ├── src/
-│   ├── components/       # ChatWindow, IntroScreen, MessageBubble
-│   ├── hooks/            # useGemini, useChat
-│   ├── lib/              # gemini.ts, supabase.ts
+│   ├── components/       
+│   │   ├── ChatWindow.tsx      # Main chat interface
+│   │   ├── ChatMessage.tsx     # Message bubble + markdown render
+│   │   ├── ChatInput.tsx       # Input field
+│   │   ├── IntroScreen.tsx     # Onboarding screen
+│   │   ├── Cart.tsx            # Shopping cart
+│   │   └── TypingIndicator.tsx
+│   ├── hooks/
+│   │   └── useGemini.ts        # Groq AI integration
+│   ├── pages/
+│   │   └── AdminDashboard.tsx  # Admin panel
 │   └── App.tsx
-├── .env.example          # Template environment variables
+├── .env.example
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
+## 🔐 Admin Dashboard
+
+Akses admin di: `[live-url]/admin`
+
+```
+Username : admin
+Password : glowbot2025
+```
+
+---
+
 ## 📷 Preview
 
-| Intro Screen | Chat Interface |
-|---|---|
-| Input nama & pilih jenis kulit | Konsultasi produk skincare |
+| Intro Screen | Chat Interface | Admin Dashboard |
+|---|---|---|
+| Input nama & pilih jenis kulit | Konsultasi + checkout produk | Statistik & manajemen bisnis |
 
 ---
 
@@ -134,7 +189,7 @@ glowbot-ai-skincare-chatbot/
 
 **Nama:** [Nama Kamu]  
 **Pelatihan:** [Nama Pelatihan]  
-**Tahun:** 2025
+**Tahun:** 2026
 
 ---
 
