@@ -47,27 +47,50 @@ export function ChatWindow({ userName, skinType, onReset }: ChatWindowProps) {
     setMessages([welcomeMessage]);
   }, [userName, skinType]);
 
-  const handleSendMessage = async (content: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setConversationHistory((prev) => [...prev, { role: 'user', content }]);
-
-    const response = await generateResponse(content, skinType, conversationHistory);
-
-    const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: response,
-    };
-
-    setMessages((prev) => [...prev, assistantMessage]);
-    setConversationHistory((prev) => [...prev, { role: 'model', content: response }]);
+ const handleSendMessage = async (content: string) => {
+  const userMessage: Message = {
+    id: Date.now().toString(),
+    role: 'user',
+    content,
   };
+
+  setMessages((prev) => [...prev, userMessage]);
+  setConversationHistory((prev) => [...prev, { role: 'user', content }]);
+
+  const response = await generateResponse(content, skinType, conversationHistory);
+
+  const assistantMessage: Message = {
+    id: (Date.now() + 1).toString(),
+    role: 'assistant',
+    content: response,
+  };
+
+  setMessages((prev) => [...prev, assistantMessage]);
+  setConversationHistory((prev) => [...prev, { role: 'model', content: response }]);
+
+  // Simpan ke Supabase
+  try {
+    // Buat conversation baru kalau belum ada
+    let convId = conversationId;
+    if (!convId) {
+      const { data: conv } = await supabase
+        .from('conversations')
+        .insert({ user_name: userName, skin_type: skinType })
+        .select()
+        .single();
+      convId = conv?.id;
+      setConversationId(convId);
+    }
+
+    // Simpan pesan user dan bot
+    await supabase.from('messages').insert([
+      { conversation_id: convId, role: 'user', content },
+      { conversation_id: convId, role: 'assistant', content: response },
+    ]);
+  } catch (err) {
+    console.error('Gagal simpan ke Supabase:', err);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex flex-col">
