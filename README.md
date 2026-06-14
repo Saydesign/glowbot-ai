@@ -147,21 +147,29 @@ grant all on orders to anon;
 ```
 glowbot-ai/
 ├── src/
-│   ├── components/       
-│   │   ├── ChatWindow.tsx      # Main chat interface
-│   │   ├── ChatMessage.tsx     # Message bubble + markdown render
-│   │   ├── ChatInput.tsx       # Input field
-│   │   ├── IntroScreen.tsx     # Onboarding screen
-│   │   ├── Cart.tsx            # Shopping cart
-│   │   └── TypingIndicator.tsx
+│   ├── components/
+│   │   ├── AdminDashboard.tsx    # Halaman admin dashboard
+│   │   ├── AdminLogin.tsx        # Halaman login admin
+│   │   ├── CartDrawer.tsx        # Keranjang belanja & checkout
+│   │   ├── Charts.tsx            # Komponen grafik bar & pie
+│   │   ├── ChatInput.tsx         # Input field chat
+│   │   ├── ChatMessage.tsx       # Bubble pesan + markdown render
+│   │   ├── ChatWindow.tsx        # Main chat interface
+│   │   ├── IntroScreen.tsx       # Onboarding & pilih jenis kulit
+│   │   └── TypingIndicator.tsx   # Animasi loading bot
+│   ├── context/
+│   │   └── CartContext.tsx       # State management keranjang
 │   ├── hooks/
-│   │   └── useGemini.ts        # Groq AI integration
-│   ├── pages/
-│   │   └── AdminDashboard.tsx  # Admin panel
-│   └── App.tsx
-├── .env.example
+│   │   └── useGemini.ts          # Groq AI integration
+│   ├── App.tsx                   # Root component & routing
+│   ├── main.tsx                  # Entry point
+│   └── index.css                 # Global styles
+├── .env.example                  # Template environment variables
 ├── .gitignore
-└── README.md
+├── README.md
+├── package.json
+├── tailwind.config.js
+└── vite.config.ts
 ```
 
 ---
