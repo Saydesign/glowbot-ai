@@ -4,7 +4,7 @@
 
 ![Status](https://img.shields.io/badge/Status-Live-brightgreen) ![Groq AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3-orange) ![Vercel](https://img.shields.io/badge/Deploy-Vercel-black) ![Supabase](https://img.shields.io/badge/Database-Supabase-green) ![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-blue)
 
-🔗 **Live Demo:** [glowbot-ai.vercel.app](https://glowbot-ai.vercel.app)
+🔗 **Live Demo:** [glowbot-ai-chatbot-8mup.vercel.app](https://glowbot-ai-chatbot-8mup.vercel.app)
 
 ---
 
