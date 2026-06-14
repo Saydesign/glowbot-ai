@@ -18,26 +18,26 @@ Project ini dibuat sebagai **Final Project** pelatihan AI Chatbot Development.
 
 ## ✨ Fitur Utama
 
-### 🤖 Chat & AI
+### 🤖 AI Chat
 - **Konsultasi jenis kulit** — bot mendeteksi jenis kulit (berminyak, kering, kombinasi, sensitif) dan menyesuaikan respons
-- **Chat interaktif** — tampilan bubble chat modern, mobile responsive, dengan markdown rendering
+- **Chat interaktif** — tampilan bubble chat modern dan mobile responsive
 - **Rekomendasi produk** — bot merekomendasikan produk dari katalog UMKM berdasarkan kebutuhan kulit
-- **Edukasi bahan aktif** — penjelasan niacinamide, retinol, AHA/BHA, dll dalam bahasa mudah dipahami
-- **Memory percakapan** — riwayat chat tersimpan otomatis di Supabase
+- **Edukasi bahan aktif** — penjelasan niacinamide, retinol, AHA/BHA, dll dalam bahasa yang mudah dipahami
+- **Memory percakapan** — riwayat chat tersimpan di database Supabase
 
-### 🛒 Checkout & Transaksi
-- **Keranjang belanja dalam chat** — tambah produk langsung dari rekomendasi bot
-- **Checkout otomatis** — isi nama, nomor HP, dan alamat pengiriman
-- **Invoice otomatis** — nomor order dibuat otomatis setelah checkout
-- **Manajemen pesanan** — semua pesanan tersimpan di database
+### 🛒 Checkout & Keranjang Belanja
+- **Keranjang belanja dalam chat** — tambah produk ke cart langsung dari percakapan
+- **Hitung total otomatis** — bot menghitung total harga dan ongkos kirim
+- **Pembuatan invoice otomatis** — generate payment link untuk diselesaikan pembeli
+- **Notifikasi follow-up** — pengingat otomatis untuk cart abandonment
 
-### 🔐 Admin Dashboard
-- **Login admin** — autentikasi untuk keamanan akses dashboard
-- **Overview lengkap** — statistik percakapan, pesan, produk, pesanan, dan pendapatan
-- **Manajemen produk** — tambah, edit, dan hapus produk katalog
-- **Riwayat percakapan** — filter harian, mingguan, bulanan, tahunan + hapus percakapan
-- **Manajemen pesanan** — update status pesanan (Pending/Confirmed/Selesai/Batal)
-- **AI Insight** — analisis menyeluruh bisnis menggunakan Groq AI
+### 🛡️ Admin Dashboard
+- **Login autentikasi** — akses dashboard dilindungi dengan sistem login aman
+- **Overview statistik** — total percakapan, pesan, jenis kulit terbanyak, total produk, revenue
+- **Manajemen produk** — tambah, edit, hapus produk dari katalog secara real-time
+- **Riwayat percakapan** — lihat semua chat dengan rekap harian, bulanan, dan tahunan
+- **Hapus percakapan** — kelola dan bersihkan database percakapan
+- **AI Summary Insight** — analisis menyeluruh dari AI mencakup tren produk, topik terpopuler, pola pembelian, dan rekomendasi bisnis
 
 ---
 
@@ -147,19 +147,24 @@ grant all on orders to anon;
 ```
 glowbot-ai/
 ├── src/
-│   ├── components/       
-│   │   ├── ChatWindow.tsx      # Main chat interface
-│   │   ├── ChatMessage.tsx     # Message bubble + markdown render
-│   │   ├── ChatInput.tsx       # Input field
-│   │   ├── IntroScreen.tsx     # Onboarding screen
-│   │   ├── Cart.tsx            # Shopping cart
-│   │   └── TypingIndicator.tsx
+│   ├── components/
+│   │   ├── AdminDashboard.tsx   # Dashboard admin lengkap
+│   │   ├── AdminLogin.tsx       # Halaman login admin
+│   │   ├── CartDrawer.tsx       # Keranjang belanja
+│   │   ├── Charts.tsx           # Grafik & statistik
+│   │   ├── ChatInput.tsx        # Input chat
+│   │   ├── ChatMessage.tsx      # Bubble pesan
+│   │   ├── ChatWindow.tsx       # Jendela chat utama
+│   │   ├── IntroScreen.tsx      # Layar intro & pilih kulit
+│   │   └── TypingIndicator.tsx  # Animasi mengetik
+│   ├── context/
+│   │   └── CartContext.tsx      # State management cart
 │   ├── hooks/
-│   │   └── useGemini.ts        # Groq AI integration
-│   ├── pages/
-│   │   └── AdminDashboard.tsx  # Admin panel
-│   └── App.tsx
-├── .env.example
+│   │   └── useGemini.ts         # Hook Groq API
+│   ├── lib/
+│   │   └── supabase.ts          # Supabase client
+│   └── App.tsx                  # Root component
+├── .env.example                 # Template environment variables
 ├── .gitignore
 └── README.md
 ```
