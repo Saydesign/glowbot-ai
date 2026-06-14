@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { IntroScreen } from './components/IntroScreen';
 import { ChatWindow } from './components/ChatWindow';
 import { AdminDashboard } from './components/AdminDashboard';
+import { CartProvider } from './context/CartContext';
 
 function App() {
   const [view, setView] = useState<'intro' | 'chat' | 'admin'>('intro');
@@ -39,12 +40,14 @@ function App() {
   }
 
   return (
-    <ChatWindow
-      userName={user.name}
-      skinType={user.skinType}
-      onReset={handleReset}
-      onGoToAdmin={handleGoToAdmin}
-    />
+    <CartProvider>
+      <ChatWindow
+        userName={user.name}
+        skinType={user.skinType}
+        onReset={handleReset}
+        onGoToAdmin={handleGoToAdmin}
+      />
+    </CartProvider>
   );
 }
 
