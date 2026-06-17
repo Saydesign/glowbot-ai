@@ -35,7 +35,7 @@ const CheckSvg = ({ className }: { className?: string }) => (
 
 export function CartDrawer({ isOpen, onClose, customerName, onOrderComplete }: CartDrawerProps) {
   const { items, removeItem, updateQuantity, subtotal, shipping, total, clearCart } = useCart();
-  const [step, setStep] = useState<'cart' | 'checkout' | 'success'>('cart');
+  const [step, setStep] = useState<'cart' | 'checkout' | 'payment_waiting' | 'success'>('cart');
   const [loading, setLoading] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState('');
   const [formData, setFormData] = useState({ fullName: '', phone: '', address: '' });
@@ -68,87 +68,73 @@ export function CartDrawer({ isOpen, onClose, customerName, onOrderComplete }: C
       const { error } = await supabase.from('orders').insert(orderData);
       if (error) throw error;
 
-      // Attempt Midtrans Snap integration (sandbox)
+      // Panggil Supabase Edge Function untuk generate Snap token
+      let paymentInstructions = '';
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const midtransKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
       const isProduction = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true';
-      let paymentInstructions = '';
 
-      if (midtransKey) {
-        try {
-          // Generate a simulated snap token for sandbox demo
-          const snapResponse = await fetch(isProduction ? 'https://app.midtrans.com/snap/v1/transactions' : 'https://app.sandbox.midtrans.com/snap/v1/transactions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Basic ${btoa(midtransKey + ':')}` },
-            body: JSON.stringify({
-              transaction_details: { order_id: orderNumber, gross_amount: total },
-              item_details: items.map(i => ({ id: i.id, price: i.price, quantity: i.quantity, name: i.name.substring(0, 50) })),
-              customer_details: { first_name: formData.fullName, phone: formData.phone },
-              enabled_payments: [selectedPayment],
-            }),
-          });
+      try {
+        const snapResponse = await fetch(`${SUPABASE_URL}/functions/v1/create-transaction`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            order_id: orderNumber,
+            gross_amount: total,
+            item_details: items.map(i => ({ id: i.id, price: i.price, quantity: i.quantity, name: i.name.substring(0, 50) })),
+            customer_details: { first_name: formData.fullName, phone: formData.phone },
+            enabled_payments: [selectedPayment],
+          }),
+        });
 
-          if (snapResponse.ok) {
-            const snapData = await snapResponse.json();
-            const snapToken = snapData.token;
-            // Update order with snap token
-            await supabase.from('orders').update({ snap_token: snapToken }).eq('order_number', orderNumber);
+        const snapData = await snapResponse.json();
 
-            // Show Midtrans Snap popup
-            const snapUrl = isProduction ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
-            const existingScript = document.querySelector(`script[src="${snapUrl}"]`);
-            if (!existingScript) {
-              const script = document.createElement('script');
-              script.src = snapUrl;
-              script.setAttribute('data-client-key', midtransKey);
-              script.async = true;
-              document.head.appendChild(script);
-              await new Promise<void>((resolve) => { script.onload = () => resolve(); });
-            }
+        if (!snapResponse.ok || !snapData.token) {
+          throw new Error('Gagal membuat transaksi');
+        }
 
-            // Open snap payment window
-            if ((window as any).snap) {
-              (window as any).snap.pay(snapToken, {
-                onSuccess: async () => {
-                  await supabase.from('orders').update({ status: 'paid' }).eq('order_number', orderNumber);
-                  onOrderComplete(`Pembayaran berhasil diterima!\nNo. Order: #${orderNumber}\nTotal: Rp${total.toLocaleString('id-ID')}\nTerima kasih telah berbelanja!`);
-                  clearCart();
-                  setStep('success');
-                },
-                onPending: () => {
-                  onOrderComplete(`Pesanan kamu berhasil dibuat!\nNo. Order: #${orderNumber}\nTotal: Rp${total.toLocaleString('id-ID')}\nPembayaran sedang diproses. Kami akan mengkonfirmasi setelah pembayaran berhasil.`);
-                  clearCart();
-                  setStep('success');
-                },
-                onError: () => {
-                  onOrderComplete(`Pesanan #${orderNumber} telah dibuat namun pembayaran gagal. Silakan coba lagi atau hubungi kami di ${formData.phone}.`);
-                  clearCart();
-                  setStep('success');
-                },
-                onClose: () => {
-                  onOrderComplete(`Pesanan #${orderNumber} dibuat. Kamu belum menyelesaikan pembayaran. Silakan coba lagi dari keranjang.`);
-                  clearCart();
-                  setStep('success');
-                },
-              });
-            } else {
-              paymentInstructions = generatePaymentInstructions(selectedPayment, orderNumber);
-              onOrderComplete(buildSuccessMessage(orderNumber, selectedPayment, formData.phone, paymentInstructions));
-              clearCart();
-              setStep('success');
-            }
-          } else {
-            paymentInstructions = generatePaymentInstructions(selectedPayment, orderNumber);
-            onOrderComplete(buildSuccessMessage(orderNumber, selectedPayment, formData.phone, paymentInstructions));
+        const snapToken = snapData.token;
+        await supabase.from('orders').update({ snap_token: snapToken }).eq('order_number', orderNumber);
+
+        const snapUrl = isProduction ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
+        const existingScript = document.querySelector(`script[src="${snapUrl}"]`);
+        if (!existingScript) {
+          const script = document.createElement('script');
+          script.src = snapUrl;
+          script.setAttribute('data-client-key', midtransKey);
+          script.async = true;
+          document.head.appendChild(script);
+          await new Promise<void>((resolve) => { script.onload = () => resolve(); });
+        }
+
+        setStep('payment_waiting');
+
+        (window as any).snap.pay(snapToken, {
+          onSuccess: async () => {
+            await supabase.from('orders').update({ status: 'paid' }).eq('order_number', orderNumber);
+            onOrderComplete(`Pembayaran berhasil diterima!\nNo. Order: #${orderNumber}\nTotal: Rp${total.toLocaleString('id-ID')}\nTerima kasih telah berbelanja!`);
             clearCart();
             setStep('success');
-          }
-        } catch {
-          paymentInstructions = generatePaymentInstructions(selectedPayment, orderNumber);
-          onOrderComplete(buildSuccessMessage(orderNumber, selectedPayment, formData.phone, paymentInstructions));
-          clearCart();
-          setStep('success');
-        }
-      } else {
+          },
+          onPending: () => {
+            onOrderComplete(`Pesanan kamu berhasil dibuat!\nNo. Order: #${orderNumber}\nTotal: Rp${total.toLocaleString('id-ID')}\nPembayaran sedang diproses.`);
+            clearCart();
+            setStep('success');
+          },
+          onError: () => {
+            setStep('checkout');
+            alert('Pembayaran gagal. Silakan coba lagi.');
+          },
+          onClose: () => {
+            setStep('checkout');
+          },
+        });
+      } catch (err) {
+        console.error('Midtrans error:', err);
         paymentInstructions = generatePaymentInstructions(selectedPayment, orderNumber);
         onOrderComplete(buildSuccessMessage(orderNumber, selectedPayment, formData.phone, paymentInstructions));
         clearCart();
@@ -179,7 +165,7 @@ export function CartDrawer({ isOpen, onClose, customerName, onOrderComplete }: C
       <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-pink-100">
-          <div className="flex items-center gap-2"><ShoppingBag className="w-5 h-5 text-pink-500" /><h2 className="font-semibold text-gray-800 text-sm">{step === 'cart' ? 'Keranjang Belanja' : step === 'checkout' ? 'Checkout' : 'Pesanan Berhasil'}</h2></div>
+          <div className="flex items-center gap-2"><ShoppingBag className="w-5 h-5 text-pink-500" /><h2 className="font-semibold text-gray-800 text-sm">{step === 'cart' ? 'Keranjang Belanja' : step === 'checkout' ? 'Checkout' : step === 'payment_waiting' ? 'Menunggu Pembayaran' : 'Pesanan Berhasil'}</h2></div>
           <button onClick={handleClose} className="p-2 rounded-lg hover:bg-pink-100"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
 
@@ -232,6 +218,15 @@ export function CartDrawer({ isOpen, onClose, customerName, onOrderComplete }: C
               <button type="submit" disabled={loading || !selectedPayment} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-400 text-white text-sm font-medium shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2">{loading ? <><Loader2 className="w-4 h-4 animate-spin" />Memproses...</> : !selectedPayment ? 'Pilih Metode Pembayaran' : 'Bayar Sekarang'}</button>
             </div>
           </form>
+        )}
+
+        {/* PAYMENT WAITING */}
+        {step === 'payment_waiting' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <Loader2 className="w-12 h-12 text-pink-400 animate-spin mb-4" />
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Menunggu Pembayaran...</h3>
+            <p className="text-gray-600 text-sm">Selesaikan pembayaran di jendela popup yang terbuka.</p>
+          </div>
         )}
 
         {/* SUCCESS */}
