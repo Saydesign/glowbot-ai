@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
-const VISION_MODEL = 'llama-3.2-90b-vision-preview';
+const VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL || '',
