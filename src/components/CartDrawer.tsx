@@ -76,7 +76,7 @@ export function CartDrawer({ isOpen, onClose, customerName, onOrderComplete }: C
       const isProduction = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true';
 
       try {
-        const snapResponse = await fetch(`${SUPABASE_URL}/functions/v1/create-transaction`, {
+        const snapResponse = await fetch(`${SUPABASE_URL}/functions/v1/swift-processor`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
