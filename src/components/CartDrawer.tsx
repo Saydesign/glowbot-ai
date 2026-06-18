@@ -125,7 +125,6 @@ export function CartDrawer({ isOpen, onClose, customerName, onOrderComplete }: C
             setStep('success');
           },
           onPending: () => {
-            onPending: () => {
             onOrderComplete(`Pesanan kamu telah dibuat, namun PEMBAYARAN BELUM SELESAI.\nNo. Order: #${orderNumber}\nTotal: Rp${total.toLocaleString('id-ID')}\nSilakan selesaikan pembayaran melalui ${payLabels[selectedPayment]} untuk konfirmasi.`);
             clearCart();
             setStep('success');
