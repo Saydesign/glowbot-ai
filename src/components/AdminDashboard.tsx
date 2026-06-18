@@ -124,7 +124,25 @@ export function AdminDashboard({ onBackToChat }: AdminDashboardProps) {
   const viewChat = async (conv: Conversation) => { setSelConv(conv); setShowChatModal(true); setChatHistLoad(true); try { const { data } = await supabase.from('messages').select('*').eq('conversation_id', conv.id).order('created_at', { ascending: true }); setChatHist(data || []); } catch (e) { console.error(e); } setChatHistLoad(false); };
 
   const delConv = async (id: string) => { if (!confirm('Hapus percakapan ini?')) return; setDeletingConvId(id); try { await supabase.from('messages').delete().eq('conversation_id', id); await supabase.from('conversations').delete().eq('id', id); setConversations(conversations.filter(c => c.id !== id)); addToast('success', 'Percakapan dihapus'); } catch (e) { console.error(e); addToast('error', 'Gagal menghapus'); } setDeletingConvId(null); };
-  const delAllConv = async () => { if (!confirm('Hapus SEMUA percakapan?')) return; try { const { data: all } = await supabase.from('conversations').select('id'); if (all) for (const c of all) await supabase.from('messages').delete().eq('conversation_id', c.id); await supabase.from('conversations').delete().neq('id', '00000000'); setConversations([]); addToast('success', 'Semua percakapan dihapus'); } catch (e) { console.error(e); addToast('error', 'Gagal menghapus'); } };
+ const delAllConv = async () => {
+  if (!confirm('Hapus SEMUA percakapan?')) return;
+  try {
+    const { data: all, error: fetchErr } = await supabase.from('conversations').select('id');
+    if (fetchErr) throw fetchErr;
+    if (all && all.length > 0) {
+      const ids = all.map(c => c.id);
+      const { error: delMsgErr } = await supabase.from('messages').delete().in('conversation_id', ids);
+      if (delMsgErr) throw delMsgErr;
+      const { error: delConvErr } = await supabase.from('conversations').delete().in('id', ids);
+      if (delConvErr) throw delConvErr;
+    }
+    setConversations([]);
+    addToast('success', 'Semua percakapan dihapus');
+  } catch (e) {
+    console.error(e);
+    addToast('error', 'Gagal menghapus semua percakapan');
+  }
+};
 
   const saveProduct = async (e: React.FormEvent) => { e.preventDefault(); setProdSaving(true); try { const d = { name: prodForm.name, category: prodForm.category, skin_type: prodForm.skin_type, description: prodForm.description, price: parseInt(prodForm.price), ingredients: prodForm.ingredients }; if (editProd) { await supabase.from('products').update(d).eq('id', editProd.id); addToast('success', 'Produk diperbarui'); } else { await supabase.from('products').insert(d); addToast('success', 'Produk ditambahkan'); } setShowProdModal(false); setEditProd(null); setProdForm({ name: '', category: '', skin_type: '', description: '', price: '', ingredients: '' }); const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false }); setProducts(data || []); } catch (e) { console.error(e); addToast('error', 'Gagal menyimpan produk'); } setProdSaving(false); };
   const editProduct = (p: Product) => { setEditProd(p); setProdForm({ name: p.name, category: p.category, skin_type: p.skin_type, description: p.description, price: p.price.toString(), ingredients: p.ingredients }); setShowProdModal(true); };
