@@ -81,11 +81,15 @@ export function CartDrawer({ isOpen, onClose, customerName, onOrderComplete }: C
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            apikey: SUPABASE_ANON_KEY,
           },
           body: JSON.stringify({
             order_id: orderNumber,
             gross_amount: total,
-            item_details: items.map(i => ({ id: i.id, price: i.price, quantity: i.quantity, name: i.name.substring(0, 50) })),
+            item_details: [
+  ...items.map(i => ({ id: i.id, price: i.price, quantity: i.quantity, name: i.name.substring(0, 50) })),
+  { id: 'shipping', price: shipping, quantity: 1, name: 'Ongkos Kirim' },
+],
             customer_details: { first_name: formData.fullName, phone: formData.phone },
             enabled_payments: [selectedPayment],
           }),
